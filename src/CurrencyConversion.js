@@ -17,8 +17,6 @@ import {
 } from "@mui/material";
 import CompareArrowsIcon from "@mui/icons-material/CompareArrows";
 import moment from "moment";
-import { styled } from "@mui/material/styles";
-import { Sparklines , SparklinesLine} from "react-sparklines";
 
 import "./App.css";
 
@@ -28,13 +26,13 @@ function CurrencyConversion(props) {
   // Initializing all the state variables
   const [output, setOutput] = useState(0);
   const [currencyOptions, setCurrencyOptions] = useState([]);
-  const [amount, setAmount] = useState(1);
-  const [fromCurrency, setFromCurrency] = useState("USD");
-  const [toCurrency, setToCurrency] = useState("INR");
+  const [amount, setAmount] = useState(0);
+  const [fromCurrency, setFromCurrency] = useState("EUR");
+  const [toCurrency, setToCurrency] = useState("USD");
   const [exchangeRate, setExchangeRate] = useState();
   const [startDate, setStartDate] = useState();
   const [endDate, setEndDate] = useState(moment().format("YYYY-MM-DD"));
-  const [duration, setDuration] = useState("7 ");
+  const [duration, setDuration] = useState(7);
   const [exchangeRateHistory, setExchangeRateHistory] = useState([]);
   const [value, setValue] = useState("table");
   const [error, setErrorMessage] = useState();
@@ -59,37 +57,27 @@ function CurrencyConversion(props) {
     },
   ];
 
-  const sampleData = {
-    labels: ['January', 'February', 'March', 'April', 'May', 'June'],
-    datasets: [
-      {
-        label: 'Sales',
-        data: [12, 19, 3, 5, 2, 3],
-        fill: false,
-        backgroundColor: 'rgba(75,192,192,0.4)',
-        borderColor: 'rgba(75,192,192,1)',
-      },
-    ],
-  };
-
-  console.log("startdate ", startDate, duration, endDate, toCurrency, fromCurrency);
-
+// to store the conversion history in local storage
 
   useEffect(() => {
-    localStorage.setItem('conversionHistory', JSON.stringify(props.conversionHistory));
+    if(props.conversionHistory?.length){
+      localStorage.setItem('conversionHistory', JSON.stringify(props.conversionHistory));
+    }
   }, [props.conversionHistory]);
+
+ // get the currency list
 
   useEffect(() => {
     fetch(`${BASE_URL}/latest`)
       .then((res) => res.json())
       .then((data) => {
-        const firstCurrency = Object.keys(data.rates)[0];
         setCurrencyOptions([...Object.keys(data.rates)]);
-        console.log("data from api", [...Object.keys(data.rates)]);
-        setToCurrency(firstCurrency);
+        // console.log("data from api", [...Object.keys(data.rates)]);
       })
       .catch((err) => console.log("There was an error:" + err));
   }, []);
+
+   //  convert currency and get targeted currency
 
   useEffect(() => {
     if (fromCurrency !== toCurrency) {
@@ -106,16 +94,21 @@ function CurrencyConversion(props) {
             result,
             date: moment().format("YYYY-MM-DD @ HH:mm")
           };
+
+          if(amount !== 0 ){
+
+            props.setConversionHistory((prevHistory) => [newConversion, ...prevHistory]);
+            console.log('storage----->>>',newConversion )
+          } 
     
-          props.setConversionHistory((prevHistory) => [newConversion, ...prevHistory]);
-          console.log('storage----->>>',newConversion )
         })
         .catch((err) => console.log("There was an error:" + err));
     } else {
       setErrorMessage("You cann't convert the same currency!");
     }
-  }, [ fromCurrency, toCurrency]);
+  }, [fromCurrency, toCurrency, output]);
 
+// to get targeted currency rate during the period of time
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,7 +136,9 @@ function CurrencyConversion(props) {
       }
     };
     fetchData();
-  }, [startDate]);
+  }, [exchangeRate,startDate]);
+
+  // to get the duration of history currencyRate i.e 7days, 14days, 30dyas
 
   useEffect(() => {
     if (duration) {
@@ -156,10 +151,14 @@ function CurrencyConversion(props) {
     }
   }, [duration]);
 
+// use to convert the to fromCurrency to target currency
+
   const convert =() => {
     const result = amount * exchangeRate;
     setOutput(result);
   }
+
+  // Switch the currency 
 
   const flip = () => {
     var temp = fromCurrency;
@@ -170,8 +169,6 @@ function CurrencyConversion(props) {
   const handleChange = (event) => {
     setValue(event.target.value);
   };
-
-  console.log("exchangeRateHistory", exchangeRateHistory);
 
 
   return (
@@ -208,7 +205,7 @@ function CurrencyConversion(props) {
                 {option}
               </MenuItem>
             ))}
-          </TextField>{" "}
+          </TextField>
         </Grid>
         <Grid item xs={2} md={0.6}>
           <CompareArrowsIcon
@@ -239,10 +236,8 @@ function CurrencyConversion(props) {
           <Button
             variant="contained"
             fullWidth
-            style={{
-              backgroundColor: "#009688",
-              fontSize: "14px",
-            }}
+            sx={{textTransform: "none"}}
+            className="button"
             onClick={() => {
               convert();
             }}
@@ -258,20 +253,16 @@ function CurrencyConversion(props) {
           {error ? error : `${output.toFixed(4)} ${toCurrency}`}
         </span>
       </h1>
-      <div className="currencyResultText">
+      <div className="center">
         <text>{`1 ${fromCurrency} =  ${exchangeRate} ${toCurrency} `}</text>
-        {/* <text>{`1 ${toCurrency} =  ${exchangeRate} ${fromCurrency} `}</text> */}
       </div>
 
-      <h1>Exchange History</h1>
-
-      {/* <div className="exhnageHistory"> */}
-      <Grid container spacing={4} style={{ marginBottom: "1%" }}>
+      <h2 className="exchangeHistoryTiltle">Exchange History</h2>
+      <Grid container spacing={4} style={{marginBottom:'2%'}}>
         <Grid item xs={8} md={3}>
           <TextField
             select
             label="To"
-            // defaultValue}
             variant="standard"
             fullWidth
             value={duration}
@@ -297,9 +288,6 @@ function CurrencyConversion(props) {
           </RadioGroup>
         </Grid>
       </Grid>
-      {/* <Sparklines data={sampleData} limit={7} width={50} height={10}   >
-      <SparklinesLine color="blue"  />
-      </Sparklines> */}
 
       {value === "table" ? (
         <Grid container spacing={1}>
@@ -347,22 +335,22 @@ function CurrencyConversion(props) {
                   <TableCell component="th" scope="row">
                     Lowest
                   </TableCell>
-                  <TableCell> {lowestRate !== null ?  lowestRate : null}</TableCell>
+                  <TableCell> {lowestRate !== null ?  lowestRate : 'no value'}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell component="th" scope="row">Highest</TableCell>
-                  <TableCell>{highestRate !== null ?  highestRate : null}</TableCell>
+                  <TableCell>{highestRate !== null ?  highestRate : 'no value'}</TableCell>
                 </TableRow>
                 <TableRow>
                   <TableCell component="th" scope="row">average </TableCell>
-                  <TableCell>{averageRate !== null ?  averageRate : null}</TableCell>
+                  <TableCell>{averageRate !== null ?  averageRate : 'no value'}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
           </Grid>
         </Grid>
       ) : (
-        <text>Hello</text>
+        <div className="center">This feature is not available for this moment</div>
       ) }
     </div>
   );

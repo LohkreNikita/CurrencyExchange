@@ -1,4 +1,4 @@
-import react, { useState } from "react";
+import react, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -13,16 +13,22 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DeleteIcon from "@mui/icons-material/Delete";
 import "./App.css";
 
-const ConversionHistory = ({ conversionHistory, onDelete }) => {
-  // const [conversionHistory, setConversionHistory] = useState(conversionHistory);
+const ConversionHistory = ({
+  conversionHistory,
+  setConversionHistory,
+  onDelete,
+}) => {
+  const handleDelete = (index) => {
+    console.log("Index value", index);
+    onDelete(index);
+  };
 
-  console.log("props conversionHistory", conversionHistory);
-
-  // const handleDelete = (index) => {
-  //     setConversionHistory((prevHistory) =>
-  //       prevHistory.filter((_, i) => i !== index)
-  //     );
-  //   };
+  useEffect(() => {
+    const storedHistory = JSON.parse(localStorage.getItem("conversionHistory"));
+    if (storedHistory) {
+      setConversionHistory(storedHistory);
+    }
+  }, []);
 
   return (
     <div className="currencyConversion">
@@ -30,30 +36,30 @@ const ConversionHistory = ({ conversionHistory, onDelete }) => {
       <TableContainer component={Paper}>
         <Table sx={{ minWidth: 650 }} aria-label="simple table">
           <TableHead>
-            <TableRow>
+            <TableRow className="tableHeaderText">
               <TableCell>Date</TableCell>
               <TableCell align="left">Event</TableCell>
               <TableCell align="left">Action</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {conversionHistory.map((conversion, index) => (
+            {conversionHistory?.map((conversion, index) => (
               <TableRow key={index}>
                 <TableCell component="th" scope="row">
                   {conversion.date}
                 </TableCell>
                 <TableCell>
-                  converted an {conversion.amount} from {conversion.fromCurrency} to {conversion.toCurrency}
+                  converted an {conversion.amount} from
+                  {conversion.fromCurrency} to {conversion.toCurrency}
                 </TableCell>
                 <TableCell className="tableRow">
-                  <Button>
+                  <Button sx={{ textTransform: "none" }}>
                     <VisibilityIcon className="iconColor" /> View
                   </Button>
                   <Button
-                    style={{
-                      color: "red",
-                      fontSize: "14px",
-                    }}
+                    onClick={() => handleDelete(index)}
+                    sx={{ textTransform: "none" }}
+                    className="deleteButton"
                   >
                     <DeleteIcon /> Delete From History
                   </Button>
